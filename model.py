@@ -30,7 +30,7 @@ class Hodgkin_Huxley_Model:
         self.E_K = -77.0 # mV
         self.E_L = -54.5 # mV
     
-    def Sodium_conductance(self,t):     # Simplified Assumption I
+    def Sodium_conductance(self,t):     # Simplified Assumption for Sodium Conductance
         if t==0:
             return 0
         elif t>10 and t<=11.5:
@@ -40,7 +40,7 @@ class Hodgkin_Huxley_Model:
         else:
             return 0
         
-    def Potassium_conductance(self,t):       # Simplified Assumption II
+    def Potassium_conductance(self,t):       # Simplified Assumption for Potassium Conudctance
         if t==0:
             return 0
         elif t>=12 and t<=40:
