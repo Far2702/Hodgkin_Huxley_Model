@@ -30,25 +30,45 @@ class Hodgkin_Huxley_Model:
         self.E_K = -77.0 # mV
         self.E_L = -54.5 # mV
     
-    def Sodium_conductance(self,t):     # Simplified Assumption I
-        if t==0:
-            return 0
-        elif t>10 and t<=11.5:
-            return self.g_Na
-        elif t>=11.5:
-            return 0
-        else:
-            return 0
+    def Sodium_conductance(self,t,V,h):     # Simplified Assumption I
+        alpha_m=0.1*(V+40)/(1-np.exp(-(V+40)/10))   # m is the probability that the activation gate of Na+ is open
+        beta_m=4*np.e**(-(V+65)/18)
+        alpha_h=0.07*np.e**(-(V+65)/20)             # h is the probability that the inactivation gate of Na+ is open
+        beta_h=1/(1+np.e**(-(V+35)/10))
         
-    def Potassium_conductance(self,t):       # Simplified Assumption II
-        if t==0:
-            return 0
-        elif t>=12 and t<=40:
-            return self.g_K
-        elif t>=40:
-            return 0
+        
+        # if t==0:
+        #     return 0
+        # elif t>10 and t<=11.5:
+        #     return self.g_Na
+        # elif t>=11.5:
+        #     return 0
+        # else:
+        #     return 0
+        
+    def Potassium_conductance(self,t,V,h):  
+        
+        if V==-55:
+            alpha_n=0.1
         else:
-            return 0
+            alpha_n=(0.01*(V+55))/(1-np.exp(-(V+55)/10))     # n is the probability that an individual subunit of K+ is open 
+        beta_n= 0.125*np.e**(-(V+65)/80)
+        n=alpha_n/(alpha_n+beta_n)
+        n_new=n
+        t_new=t
+        t_new=t_new+h
+        n_new=n_new+ h*((alpha_n*(1-n_new))-(beta_n*n_new))
+        print(t_new)
+        print(n_new)
+        return self.g_K*((n_new)**4),t_new
+        # if t==0:
+        #     return 0
+        # elif t>=12 and t<=40:
+        #     return self.g_K
+        # elif t>=40:
+        #     return 0
+        # else:
+        #     return 0
           
     def plot_Membrane_Pot_vs_time(self):       # Solving differential equation using Euler Method
         V_m=[]
@@ -62,12 +82,12 @@ class Hodgkin_Huxley_Model:
         while (t_new<=self.time_span):   # t_0=0 and Vm_0=-65mV
             V_m.append(V_new)
             t.append(t_new)
-            t_new=t_new+h
-            V_new=V_new+h*(-((self.Sodium_conductance(t_new)*(V_new-self.E_Na))/self.membrane_capacitance)-((self.Potassium_conductance(t_new)*(V_new-self.E_K))/self.membrane_capacitance)-((self.g_l*(V_new-self.E_L))/self.membrane_capacitance)+self.External_Current)
+            K,t_new=self.Potassium_conductance(t_new,V_new,h)
+            V_new=V_new+h*(-((self.Sodium_conductance(t_new)*(V_new-self.E_Na))/self.membrane_capacitance)-((K*(V_new-self.E_K))/self.membrane_capacitance)-((self.g_l*(V_new-self.E_L))/self.membrane_capacitance)+self.External_Current)
         
         fig,ax=plt.subplots()
         ax.set_xlim([min(t),max(t)])
-        ax.set_ylim([min(V_m),max(V_m)])
+        ax.set_ylim([min(V_m)-10,max(V_m)+10])
         
         animated_plot, = ax.plot([],[])        
         def update(frame):
@@ -81,16 +101,14 @@ class Hodgkin_Huxley_Model:
         plt.ylabel("Potential(mV)")
         plt.show()
         print(V_m[:5])
-        print(t[:5])
+        print(len(t))
 
-#################################
-model=Hodgkin_Huxley_Model()
+##############--------------------------------------------
+model=Hodgkin_Huxley_Model(External_Current=0)
 model.default_values()
 model.display_info()
-model.plot_Membrane_Pot_vs_time()
-        
-        
-            
+model.plot_Membrane_Pot_vs_time()  
+                
             
             
             
