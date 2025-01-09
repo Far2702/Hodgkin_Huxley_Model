@@ -7,6 +7,9 @@ class Hodgkin_Huxley_Model:
     m_new=0
     h_new=0
     n_new=0
+    m=[]
+    h=[]
+    n=[]
     
     def __init__(self,Resting_Potential=-65,External_Current=10,time_span=100,time_steps=30000):     # There is some issues for time_step less than 9000  
         """  
@@ -50,10 +53,14 @@ class Hodgkin_Huxley_Model:
         if self.c==0:
             Hodgkin_Huxley_Model.m_new=self.m_resting
             Hodgkin_Huxley_Model.h_new=self.h_resting
+            Hodgkin_Huxley_Model.m.append(Hodgkin_Huxley_Model.m_new)
+            Hodgkin_Huxley_Model.h.append(Hodgkin_Huxley_Model.h_new)
             self.c=self.c+1
              
         Hodgkin_Huxley_Model.m_new=Hodgkin_Huxley_Model.m_new+step*((alpha_m*(1-Hodgkin_Huxley_Model.m_new))-(beta_m*Hodgkin_Huxley_Model.m_new))
         Hodgkin_Huxley_Model.h_new=Hodgkin_Huxley_Model.h_new+step*((alpha_h*(1-Hodgkin_Huxley_Model.h_new))-(beta_h*Hodgkin_Huxley_Model.h_new))
+        Hodgkin_Huxley_Model.m.append(Hodgkin_Huxley_Model.m_new)
+        Hodgkin_Huxley_Model.h.append(Hodgkin_Huxley_Model.h_new)
         return self.g_Na*(Hodgkin_Huxley_Model.m_new**3)*Hodgkin_Huxley_Model.h_new
         
     def Potassium_conductance(self,t,V,h):  
@@ -64,9 +71,11 @@ class Hodgkin_Huxley_Model:
         beta_n= 0.125*np.e**(-(V+65)/80)
         if self.d==0:
             Hodgkin_Huxley_Model.n_new=self.n_resting
+            Hodgkin_Huxley_Model.n.append(Hodgkin_Huxley_Model.n_new)
             self.d=self.d+1 
         
         Hodgkin_Huxley_Model.n_new=Hodgkin_Huxley_Model.n_new+ h*((alpha_n*(1-Hodgkin_Huxley_Model.n_new))-(beta_n*Hodgkin_Huxley_Model.n_new))
+        Hodgkin_Huxley_Model.n.append(Hodgkin_Huxley_Model.n_new)
         return self.g_K*((Hodgkin_Huxley_Model.n_new)**4)
         
     def plot_Membrane_Pot_vs_time(self):       # Solving differential equation using Euler's Method
@@ -86,25 +95,53 @@ class Hodgkin_Huxley_Model:
             t_new=t_new+h
             V_new=V_new+h*(-((Na*(V_new-self.E_Na))/self.membrane_capacitance)-((K*(V_new-self.E_K))/self.membrane_capacitance)-((self.g_l*(V_new-self.E_L))/self.membrane_capacitance)+self.External_Current)
         
-        fig,ax=plt.subplots()
+        ### Animation ###
+        fig,axes=plt.subplots(2,2,figsize=(10,5))
+        fig.tight_layout(pad=3)
+        ax,ax1,ax2,ax3=axes.flatten()
+        
         ax.set_xlim([min(t),max(t)])
         ax.set_ylim([min(V_m)-10,max(V_m)+10])
+        ax.set_xlabel("Time(ms)")
+        ax.set_ylabel("Potential(mV)")
+        ax.grid(True)
         
-        animated_plot, = ax.plot([],[])        
+        ax1.set_xlim([min(t),max(t)])
+        ax1.set_ylim([min(Hodgkin_Huxley_Model.m)-1,max(Hodgkin_Huxley_Model.m)+1])
+        ax1.set_xlabel("Time(ms)")
+        ax1.set_ylabel("m")
+        ax1.grid(True)
+        
+        ax2.set_xlim([min(t),max(t)])
+        ax2.set_ylim([min(Hodgkin_Huxley_Model.h)-1,max(Hodgkin_Huxley_Model.h)+1])
+        ax2.set_xlabel("Time(ms)")
+        ax2.set_ylabel("h")
+        ax2.grid(True)
+        
+        ax3.set_xlim([min(t),max(t)])
+        ax3.set_ylim([min(Hodgkin_Huxley_Model.n)-1,max(Hodgkin_Huxley_Model.n)+1])
+        ax3.set_xlabel("Time(ms)")
+        ax3.set_ylabel("n")
+        ax3.grid(True)
+        
+        animated_plot1,=ax1.plot([],[],'r-')
+        animated_plot,=ax.plot([],[],'b-')   
+        animated_plot2,=ax2.plot([],[],'g-')
+        animated_plot3,=ax3.plot([],[],'y-')
+            
         def update(frame):
             idx = frame*10    # Skipping 10 frames for fast animation
             animated_plot.set_data(t[:idx],V_m[:idx])
-            return animated_plot,
+            animated_plot1.set_data(t[:idx],Hodgkin_Huxley_Model.m[:-1][:idx])
+            animated_plot2.set_data(t[:idx],Hodgkin_Huxley_Model.h[:-1][:idx])
+            animated_plot3.set_data(t[:idx],Hodgkin_Huxley_Model.n[:-1][:idx])
+            return animated_plot,animated_plot1,animated_plot2,animated_plot3
         
-        animation = FuncAnimation(fig=fig,func=update,frames=self.time_steps,interval=0,blit=True)
-
-        plt.xlabel("Time(ms)")
-        plt.ylabel("Potential(mV)")
+        animation=FuncAnimation(fig=fig,func=update,frames=self.time_steps,interval=0,blit=True)
         plt.show()
-        
 ##############--------------------------------------------
 
-model=Hodgkin_Huxley_Model(External_Current=10)
+model=Hodgkin_Huxley_Model(External_Current=10,time_span=20,time_steps=10000)
 model.display_info()
 model.plot_Membrane_Pot_vs_time()  
                 
